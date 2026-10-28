@@ -1,0 +1,26 @@
+# ---------------------------------------------------------------------------
+# Service NodePort du blog 1
+# Un Service donne une adresse stable devant le Pod (dont l'IP change à chaque
+# recréation) et répartit le trafic vers les Pods qui portent les bons labels.
+# Le type NodePort ouvre en plus un port fixe sur TOUS les nœuds du cluster.
+# ---------------------------------------------------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: ghost                 # nom DNS interne : ghost.behanzin-blog1.svc.cluster.local
+  namespace: behanzin-blog2
+  labels:
+    app: ghost
+    owner: behanzin           # label de personnalisation obligatoire
+spec:
+  type: NodePort              # accessible depuis l'extérieur du cluster via <IP du nœud>:nodePort
+  selector:                   # le Service envoie le trafic aux Pods portant ces labels,
+    app: ghost                # uniquement dans son propre namespace
+    blog: blog2
+  ports:
+    - name: http
+      port: 2368              # port du Service à l'intérieur du cluster (ClusterIP:2368)
+      targetPort: 2368        # port du conteneur Ghost vers lequel le trafic est envoyé
+      nodePort: 30082         # port ouvert sur chaque nœud (plage autorisée : 30000-32767).
+                              # Différent pour chaque blog, et identique au port publié
+                              # par kind (extraPortMappings) pour être joignable depuis Windows.

@@ -1,0 +1,16 @@
+# Configuration kind : 1 control plane + 3 workers
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: k8s-behanzin               # nom du cluster imposé par le TP
+nodes:
+  - role: control-plane
+    # Les nœuds kind sont des conteneurs Docker : on publie sur l'hôte
+    # les NodePorts des futurs blogs pour les ouvrir dans le navigateur.
+    extraPortMappings:
+      - containerPort: 30081   # blog 1
+        hostPort: 30081
+      - containerPort: 30082   # blog 2
+        hostPort: 30082
+  - role: worker
+  - role: worker
+  - role: worker

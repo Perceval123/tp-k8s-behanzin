@@ -1,0 +1,13 @@
+# ---------------------------------------------------------------------------
+# Namespace du blog 1
+# Un namespace est un espace logique qui regroupe et isole les ressources
+# (Deployment, Pods, Service...) d'un même projet à l'intérieur du cluster.
+# Fichier préfixé "01-" : il doit être créé AVANT les autres ressources,
+# car "kubectl apply -f <dossier>" traite les fichiers par ordre alphabétique.
+# ---------------------------------------------------------------------------
+apiVersion: v1                # API "core" de Kubernetes, où est défini l'objet Namespace
+kind: Namespace               # type d'objet créé
+metadata:
+  name: behanzin-blog2        # nom imposé par le TP : <nom>-blog1
+  labels:
+    owner: behanzin           # label de personnalisation obligatoire sur toutes les ressources

@@ -1,0 +1,23 @@
+# ---------------------------------------------------------------------------
+# PersistentVolumeClaim (PVC) du blog 1 — BONUS persistance
+# Une PVC est une "demande de stockage" : le Pod ne choisit pas un disque
+# précis, il réclame 1 Gio et Kubernetes lui fournit un volume (PV).
+# Le volume existe indépendamment du Pod : il survit à sa suppression.
+# ---------------------------------------------------------------------------
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ghost-content               # nom référencé dans le Deployment (claimName)
+  namespace: behanzin-blog1
+  labels:
+    app: ghost
+    owner: behanzin                 # label de personnalisation obligatoire
+spec:
+  accessModes:
+    - ReadWriteOnce                 # monté en lecture/écriture par UN seul nœud à la fois
+                                    # (suffisant : 1 seul Pod Ghost, voir question 1)
+  storageClassName: standard        # StorageClass installée par kind ("Installing StorageClass") :
+                                    # le provisioner local-path crée un dossier sur le nœud
+  resources:
+    requests:
+      storage: 1Gi                  # taille demandée : largement assez pour la base SQLite et les images

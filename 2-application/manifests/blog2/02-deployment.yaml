@@ -1,0 +1,76 @@
+# ---------------------------------------------------------------------------
+# Deployment Ghost du blog 2
+# Un Deployment décrit l'état voulu (image, nombre de réplicas, ressources...).
+# Kubernetes crée un ReplicaSet qui maintient en permanence ce nombre de Pods :
+# si le Pod est supprimé ou plante, il est recréé (self-healing).
+# ---------------------------------------------------------------------------
+apiVersion: apps/v1           # groupe d'API "apps", où sont définis les Deployments
+kind: Deployment
+metadata:
+  name: ghost                 # même nom dans chaque blog : possible car les namespaces sont séparés
+  namespace: behanzin-blog2   # le Deployment est créé dans le namespace du blog 2
+  labels:
+    app: ghost                # identifie l'application
+    owner: behanzin           # label de personnalisation obligatoire
+spec:
+  replicas: 1                 # 1 seul Pod : la base SQLite est un fichier local au Pod,
+                              # plusieurs réplicas auraient chacun leur propre base (question 1)
+  strategy:
+    type: Recreate            # BONUS : lors d'une mise à jour, l'ancien Pod est arrêté AVANT
+                              # de créer le nouveau. Deux Ghost ne doivent jamais écrire
+                              # en même temps dans la même base SQLite du volume.
+  selector:
+    matchLabels:              # le Deployment gère les Pods qui portent CES labels
+      app: ghost
+      blog: blog2
+  template:                   # modèle utilisé pour créer chaque Pod
+    metadata:
+      labels:                 # labels posés sur les Pods : ils DOIVENT contenir ceux du selector
+        app: ghost
+        blog: blog2
+        owner: behanzin       # label de personnalisation aussi sur les Pods
+    spec:
+      containers:
+        - name: ghost
+          image: ghost:6-alpine          # image officielle imposée (Ghost 6, base Alpine Linux légère)
+          ports:
+            - name: http
+              containerPort: 2368        # port d'écoute de Ghost dans le conteneur
+          env:                           # variables d'environnement lues par Ghost au démarrage
+            - name: NODE_ENV
+              value: development         # en mode "development", Ghost utilise une base SQLite
+                                         # (un simple fichier) : pas besoin de serveur MySQL
+            - name: url
+              value: http://localhost:30082   # adresse EXACTE tapée dans le navigateur.
+                                              # Ghost s'en sert pour générer ses liens et redirections.
+                                              # localhost:30082 fonctionne grâce aux extraPortMappings
+                                              # du cluster kind (port 30082 publié sur Windows).
+            - name: database__connection__filename
+              value: /var/lib/ghost/content/data/ghost.db
+                                         # BONUS : chemin ABSOLU de la base SQLite, DANS le volume.
+                                         # En mode development, Ghost place sa base par défaut dans
+                                         # son dossier d'installation (hors du volume) : sans cette
+                                         # variable, la base serait perdue à chaque recréation du Pod.
+                                         # Syntaxe Ghost : "__" = niveau d'imbrication de la config
+                                         # (database.connection.filename).
+            - name: security__staffDeviceVerification
+              value: "false"             # désactive la vérification par e-mail à la connexion
+                                         # depuis un nouvel appareil : aucun serveur d'envoi de mails
+                                         # n'est configuré, Ghost échouerait avec "Failed to send email"
+          resources:
+            requests:                    # ressources RÉSERVÉES : le scheduler place le Pod
+              cpu: 100m                  # sur un nœud qui a au moins 0,1 CPU
+              memory: 256Mi              # et 256 Mio de mémoire disponibles
+            limits:                      # PLAFONDS que le conteneur ne peut pas dépasser
+              cpu: "1"                   # 1 CPU max : Ghost consomme beaucoup au démarrage
+                                         # (au-delà, il est ralenti, pas arrêté)
+              memory: 768Mi              # au-delà, le conteneur est tué (OOMKilled) puis relancé ;
+                                         # Ghost 6 utilise ~300-500 Mio, 768 Mio laisse une marge
+          volumeMounts:                  # BONUS : monte le volume persistant dans le conteneur
+            - name: content
+              mountPath: /var/lib/ghost/content   # dossier où Ghost stocke sa base SQLite (data/),
+                                                  # les images envoyées et les thèmes
+      volumes:                           # BONUS : déclare le volume utilisé par le Pod
+        - name: content                  # nom interne, repris dans volumeMounts
+          persistentVolumeClaim:
+            claimName: ghost-content     # la PVC définie dans 04-pvc.yaml
