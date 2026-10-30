@@ -1,6 +1,7 @@
 # Partie 2 — Déploiement de deux blogs Ghost isolés
 
 > **Auteur :** Perceval BEHANZIN — TP Kubernetes Niveau 1
+>
 > **Cluster :** `k8s-behanzin` (kind, 1 control plane + 3 workers, voir [Partie 1](../1-cluster/cluster.md))
 
 ## Sommaire
@@ -14,13 +15,14 @@
 7. [Isolation des namespaces](#7-isolation-des-namespaces)
 8. [Questions](#8-questions)
 9. [Suppression](#9-suppression)
-10. [Difficultés rencontrées](#10-difficultés-rencontrées)
+10. [Bonus : persistance des articles avec un volume](#10-bonus--persistance-des-articles-avec-un-volume)
+11. [Difficultés rencontrées](#11-difficultés-rencontrées)
 
 ---
 
 ## 1. Vue d'ensemble
 
-| | Blog 1 | Blog 2 |
+| Élément | Blog 1 | Blog 2 |
 |---|---|---|
 | Namespace | `behanzin-blog1` | `behanzin-blog2` |
 | Deployment | `ghost` (1 réplica, image `ghost:6-alpine`) | `ghost` (1 réplica, image `ghost:6-alpine`) |
@@ -32,7 +34,7 @@
 
 Chemin d'une requête depuis le navigateur :
 
-![alt text](captures/schéma_app2.PNG)
+![Schéma du chemin d'une requête depuis le navigateur](captures/schéma_app2.PNG)
 
 ---
 
@@ -193,18 +195,23 @@ Commentaire : le Pod du blog 2 a été placé sur un **autre worker** (`k8s-beha
 
 ### 3.4 Vérifier l'accès
 
+Blog 1 :
+
 ```
 curl.exe -I http://localhost:30081
-   
-   ![Texte alternatif](captures/blog1_30081.PNG)
-
-   ![Texte alternatif](captures/blog1__pageweb.PNG)
-
-
-curl.exe -I http://localhost:30082
-
-![Texte alternatif](captures/page2_blog2.PNG)
 ```
+
+![Réponse de curl sur le port 30081](captures/blog1_30081.PNG)
+
+![Page du blog 1 dans le navigateur](captures/blog1__pageweb.PNG)
+
+Blog 2 :
+
+```
+curl.exe -I http://localhost:30082
+```
+
+![Page du blog 2 dans le navigateur](captures/page2_blog2.PNG)
 
 Les blogs sont alors accessibles sur http://localhost:30081 et http://localhost:30082 (sorties en section 5.4).
 
@@ -219,9 +226,9 @@ Pour chaque blog :
 3. Dans *Settings → General*, donner au site le titre **« Blog 1 de behanzin »** (puis **« Blog 2 de behanzin »**).
 4. Publier un article.
 
- ![Publication blog1](captures/blog1_page.PNG)
-  ![Publication blog2](captures/blog2_page1.PNG)
+![Article publié sur le blog 1](captures/blog1_page.PNG)
 
+![Article publié sur le blog 2](captures/blog2_page1.PNG)
 
 ---
 
@@ -273,7 +280,6 @@ replicaset.apps/ghost-5b96795849   1         1         1       26m   ghost      
 ```
 
 Commentaire : même structure que le blog 1 (Deployment → ReplicaSet → Pod, plus un Service), mais avec des ressources **distinctes** :
-
 
 | Élément                  | Blog 1                   | Blog 2                   |
 |--------------------------|--------------------------|--------------------------|
@@ -400,12 +406,13 @@ kubectl get pods -n behanzin-blog1 -o wide -w
 ```
 
 Fenêtre 2 (suppression du Pod) :
-Apès la suppresion les données du blog 1 sont perdus donc l'article que j'ai publié est supprimé et il faut créer encore un admin et reconfigurer 
 
 ```
 C:\Users\DUP\Documents\tp-k8s-behanzin>kubectl delete pod -n behanzin-blog1 -l app=ghost
 pod "ghost-79855d4885-tlrtp" deleted from behanzin-blog1 namespace
 ```
+
+Après la suppression, les données du blog 1 sont perdues : l'article que j'avais publié a disparu, et il faut créer à nouveau un compte administrateur et reconfigurer le blog.
 
 Sortie de la fenêtre 1 :
 
@@ -435,8 +442,9 @@ ghost-79855d4885-rxkn6   1/1     Running   0          18m   10.244.2.2   k8s-beh
 
 Le Pod recréé `ghost-79855d4885-rxkn6` est bien `1/1 Running` sur `k8s-behanzin-worker2`, avec une nouvelle IP `10.244.2.2` (l'ancien Pod avait `10.244.3.2` sur worker3).
 
-et mon blog que j'ai créer est perdu 
-![Texte alternatif](captures/capture_blog1_aprs_supp.PNG)
+Le blog que j'avais créé est perdu :
+
+![Blog 1 après la suppression du Pod](captures/capture_blog1_aprs_supp.PNG)
 
 Même test sur le blog 2 :
 
@@ -461,7 +469,7 @@ ghost-5b96795849-zvmqx   0/1     Completed           0          57m   10.244.1.2
 ghost-5b96795849-tgc7r   1/1     Running             0          16s   10.244.3.3   k8s-behanzin-worker3   <none>           <none>
 ```
 
-![Texte alternatif](captures/page_blog2_aprs_supp.PNG)
+![Blog 2 après la suppression du Pod](captures/page_blog2_aprs_supp.PNG)
 
 Commentaire — déroulement du self-healing (exemple du blog 2, le plus complet) :
 
@@ -485,12 +493,11 @@ Conclusion : *le Deployment décrit un état voulu (1 réplica). Dès que l'éta
 
 ---
 
-## 6. Preuve de fonctionnement web*
+## 6. Preuve de fonctionnement web
 
-![Texte alternatif](captures/page_blog2_aprs_supp.PNG)
+![Blog 2 dans le navigateur](captures/page_blog2_aprs_supp.PNG)
 
-![Texte alternatif](captures/capture_blog1_aprs_supp.PNG)
-
+![Blog 1 dans le navigateur](captures/capture_blog1_aprs_supp.PNG)
 
 ### Pourquoi les NodePorts ne sont pas joignables directement avec kind
 
@@ -507,7 +514,6 @@ Dès la création du cluster, le fichier `kind-config.yaml` (Partie 1) publie le
 Les `curl.exe -I` de la section 5.4 le prouvent : réponse `200 OK` sur `localhost:30081` et `localhost:30082`.
 
 L'alternative aurait été `kubectl port-forward`. Elle fonctionne sans configuration préalable, mais il faut garder un terminal ouvert, et ce n'est plus le NodePort qui est utilisé.
-
 
 ---
 
@@ -538,9 +544,7 @@ kubectl get pods
 kubectl config use-context kind-k8s-behanzin
 ```
 
-```
-
-Commentaire : <À FAIRE — `kubectl get pods`, sans `-n`, affiche le Pod du blog 1 quand le contexte `blog1` est actif, puis celui du blog 2 avec le contexte `blog2`. L'astérisque de `get-contexts` indique le contexte actif.>
+> **À compléter après exécution :** ajouter la sortie des commandes ci-dessus, puis le commentaire suivant. `kubectl get pods`, sans `-n`, affiche le Pod du blog 1 quand le contexte `blog1` est actif, puis celui du blog 2 avec le contexte `blog2`. L'astérisque de `get-contexts` indique le contexte actif.
 
 ### 7.3 Supprimer un namespace supprime tout le blog, sans toucher à l'autre
 
@@ -549,10 +553,9 @@ kubectl delete namespace behanzin-blog2
 kubectl get all -n behanzin-blog2
 kubectl get all -n behanzin-blog1
 curl.exe -I http://localhost:30081
+```
 
-
-
-Commentaire : <À FAIRE — après la suppression, `get all -n behanzin-blog2` ne renvoie plus rien (« No resources found ») : le Deployment, le ReplicaSet, le Pod et le Service ont été supprimés avec le namespace. Le blog 1 est intact : ses objets sont toujours là et `curl` renvoie toujours `200 OK`.>
+> **À compléter après exécution :** ajouter la sortie des commandes ci-dessus, puis le commentaire suivant. Après la suppression, `get all -n behanzin-blog2` ne renvoie plus rien (« No resources found ») : le Deployment, le ReplicaSet, le Pod et le Service ont été supprimés avec le namespace. Le blog 1 est intact : ses objets sont toujours là et `curl` renvoie toujours `200 OK`.
 
 Recréation du blog 2 :
 
@@ -576,16 +579,17 @@ Pour passer à plusieurs réplicas, il faudrait une base de données externe par
 
 ### Question 2 — Que devient l'article quand on supprime le Pod ?
 
-l'article est perdu 
+L'article est perdu.
 
-![Texte alternatif](captures/capture_blog1_aprs_supp.PNG)
-![Texte alternatif](captures/page_blog2_aprs_supp.PNG)
+![Blog 1 après la suppression du Pod](captures/capture_blog1_aprs_supp.PNG)
+
+![Blog 2 après la suppression du Pod](captures/page_blog2_aprs_supp.PNG)
 
 Constat : après la suppression du Pod (section 5.5), le nouveau Pod démarre normalement, mais **l'article publié a disparu**. Le blog revient à son état initial (titre par défaut, articles de démonstration) et l'interface `/ghost` redemande la création du compte administrateur.
 
 Explication : la base SQLite (avec l'article, le titre du site et le compte administrateur) était enregistrée **dans le système de fichiers du conteneur**. Ce système de fichiers est **éphémère** : il est détruit avec le Pod. Le Deployment ne recrée pas « le même » Pod, il en crée un **nouveau** à partir de l'image `ghost:6-alpine`, qui ne contient qu'une base vide. Les données ne sont jamais copiées d'un Pod à l'autre.
 
-Le self-healing garantit donc la **disponibilité** de l'application, mais pas la **persistance** de ses données. Pour conserver les articles, il faudrait monter un volume persistant (PersistentVolumeClaim) sur `/var/lib/ghost/content`, le dossier où Ghost stocke sa base et ses images : le volume survivrait à la suppression du Pod et serait rattaché au nouveau.
+Le self-healing garantit donc la **disponibilité** de l'application, mais pas la **persistance** de ses données. Pour conserver les articles, il faudrait monter un volume persistant (PersistentVolumeClaim) sur `/var/lib/ghost/content`, le dossier où Ghost stocke sa base et ses images : le volume survivrait à la suppression du Pod et serait rattaché au nouveau. C'est l'objet du bonus (section 10).
 
 ### Question 3 — Les namespaces isolent-ils le réseau ?
 
@@ -679,15 +683,7 @@ kind delete cluster --name k8s-behanzin
 
 ---
 
-## 10. Difficultés rencontrées
-
-| # | Problème                                                       | Cause                                                               | Solution                                                                                                                                  |
-|:-:|----------------------------------------------------------------|---------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|
-| 1 | Pod du blog 1 bloqué plus de 10 min<br>en `ContainerCreating`  | Image `ghost:6-alpine` (≈ 200 Mo)<br>téléchargée en **11 min 13 s** | `kubectl describe pod -n behanzin-blog1`<br>→ `Events` : `Pulling image`, pas d'erreur<br>→ attendre l'événement `Pulled`                 |
-| 2 | Image retéléchargée pour le blog 2<br>et après le self-healing | Chaque nœud kind a son propre<br>cache d'images (containerd)        | Comportement normal. Pour accélérer :<br>`docker pull ghost:6-alpine`<br>puis `kind load docker-image ghost:6-alpine --name k8s-behanzin` |
-
-
-## 10. Bonus — Persistance des articles avec un volume
+## 10. Bonus : persistance des articles avec un volume
 
 ### 10.1 Objectif
 
@@ -888,7 +884,6 @@ La variable est présente et la base **`ghost.db`** (1,1 Mo) est maintenant **su
 
 Configuration du blog sur http://localhost:30081/ghost : création du compte, titre « Blog 1 de behanzin », publication d'un article.
 
-<!-- À FAIRE : capture avant la suppression -->
 ![Blog 1 avant la suppression du Pod](captures/site1_blog1.PNG)
 
 **Avant** la suppression du Pod :
@@ -921,12 +916,8 @@ Le Pod `hvlw4` a été remplacé par **`pghf6`** : nouveau nom, nouvelle IP (`10
 
 **Après** la recréation du Pod :
 
-```
-<À FAIRE : kubectl exec -n behanzin-blog1 deploy/ghost -- ls -l /var/lib/ghost/content/data
-           — attendu : le même ghost.db de 1413120 octets, modifié à 14:30 (ou plus tard si Ghost a écrit au démarrage)>
-```
+> **À compléter :** ajouter la sortie de `kubectl exec -n behanzin-blog1 deploy/ghost -- ls -l /var/lib/ghost/content/data`. Résultat attendu : le même `ghost.db` de 1 413 120 octets, modifié à 14:30 (ou plus tard si Ghost a écrit au démarrage).
 
-<!-- À FAIRE : capture après la suppression : même titre, article toujours présent, sans recréer de compte -->
 ![Article conservé après suppression du Pod](captures/bonus-article-conserve.PNG)
 
 ### 10.9 Blog 2
@@ -962,7 +953,7 @@ La base `ghost.db` est bien créée sur le volume. Sa petite taille (24 Ko) mont
 
 ### 10.10 Conclusion
 
-Après le dernier `ls -l` et la capture : le Pod a été supprimé et remplacé (nouveau nom, nouvelle IP), mais le fichier `ghost.db` est le même et l'article est toujours visible, sans recréer de compte. **Le Pod est jetable, le volume ne l'est pas.**>
+Après le dernier `ls -l` et la capture : le Pod a été supprimé et remplacé (nouveau nom, nouvelle IP), mais le fichier `ghost.db` est le même et l'article est toujours visible, sans recréer de compte. **Le Pod est jetable, le volume ne l'est pas.**
 
 Points retenus :
 

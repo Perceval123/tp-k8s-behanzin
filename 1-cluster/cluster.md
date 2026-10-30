@@ -1,7 +1,9 @@
 # Partie 1 — Cluster bac à sable `k8s-behanzin`
 
 > **Auteur :** Perceval BEHANZIN
+>
 > **TP :** Kubernetes Niveau 1 — AUKFOOD
+>
 > **Date de réalisation :** 21/10/2026
 
 ## Sommaire
@@ -16,31 +18,31 @@
 ---
 
 ## 1. Choix de la solution
+
 J'ai choisi **kind** car le TP demande un cluster de 4 nœuds
 (1 control plane + 3 workers). kind permet de décrire cette topologie dans un
-fichier `kind-config.yaml` versionné, de recréer le cluster à l’identique en
-une commande, et consomme peu de ressources
+fichier `kind-config.yaml` versionné, de recréer le cluster à l'identique en
+une commande, et consomme peu de ressources.
 
-
-## Comparaison des solutions de mise en place d’un cluster
+### Comparaison des solutions de mise en place d'un cluster
 
 Pour un cluster Kubernetes local, plusieurs outils existent. Les deux plus
 utilisés sont **kind** et **minikube**.
 
-### Solution 1 : kind (Kubernetes IN Docker)
+#### Solution 1 : kind (Kubernetes IN Docker)
 
 kind crée chaque nœud Kubernetes sous forme de conteneur Docker. Il a été
-conçu à l’origine par la communauté Kubernetes pour tester Kubernetes
+conçu à l'origine par la communauté Kubernetes pour tester Kubernetes
 lui-même.
 
 - **Avantages** : création très rapide (environ une minute), multi-nœuds
   simple à déclarer dans un fichier YAML, léger (seul Docker est nécessaire),
   configuration versionnable et reproductible.
-- **Inconvénients** : les services ne sont pas accessibles depuis l’hôte sans
-  configurer `extraPortMappings`, pas de tableau de bord ni d’extensions
+- **Inconvénients** : les services ne sont pas accessibles depuis l'hôte sans
+  configurer `extraPortMappings`, pas de tableau de bord ni d'extensions
   intégrées, nécessite Docker.
 
-### Solution 2 : minikube
+#### Solution 2 : minikube
 
 minikube crée un cluster dans une machine virtuelle ou un conteneur, selon le
 « driver » choisi (Docker, Hyper-V, VirtualBox…).
@@ -52,18 +54,17 @@ minikube crée un cluster dans une machine virtuelle ou un conteneur, selon le
   `--nodes` mais reste moins naturel), plus gourmand en ressources avec un
   driver de VM, démarrage plus lent.
 
-### Tableau comparatif
+#### Tableau comparatif
 
-| Critère                  | kind                         | minikube                          |
-|--------------------------|------------------------------|-----------------------------------|
-| Technologie              | Nœuds = conteneurs Docker    | VM ou conteneur selon le driver   |
-| Multi-nœuds              | Natif, via le fichier YAML   | Possible avec `--nodes`           |
-| Rapidité de création     | Très rapide                  | Plus lent                         |
-| Consommation ressources  | Faible                       | Moyenne à élevée (VM)             |
-| Accès aux services       | `extraPortMappings` à prévoir | `minikube service` intégré        |
-| Extensions (dashboard…)  | À installer soi-même         | Addons intégrés                   |
-| Usage typique            | Tests, CI, TP multi-nœuds    | Découverte, développement local   |
-
+| Critère                 | kind                          | minikube                        |
+|-------------------------|-------------------------------|---------------------------------|
+| Technologie             | Nœuds = conteneurs Docker     | VM ou conteneur selon le driver |
+| Multi-nœuds             | Natif, via le fichier YAML    | Possible avec `--nodes`         |
+| Rapidité de création    | Très rapide                   | Plus lent                       |
+| Consommation ressources | Faible                        | Moyenne à élevée (VM)           |
+| Accès aux services      | `extraPortMappings` à prévoir | `minikube service` intégré      |
+| Extensions (dashboard…) | À installer soi-même          | Addons intégrés                 |
+| Usage typique           | Tests, CI, TP multi-nœuds     | Découverte, développement local |
 
 ### Justification du choix
 
@@ -79,16 +80,16 @@ Avec kind en ligne de commande, tout le cluster est décrit dans un seul fichier
 
 ### Machine hôte
 
-| Élément | Valeur |
-|---|---|
-| Machine | Dell Latitude E7440 (BIOS Dell A28) |
-| Système | Windows 10 Professionnel 22H2, 64 bits (build 10.0.19045.6466) |
-| CPU | Intel Core i7 de 4e génération (Haswell — Intel64 Family 6 Model 69), ~2,0 GHz |
-| RAM | 16 Go (16 289 Mo) |
-| Disque | SSD 256 Go (59 Go libres au moment de l'installation) |
-| Virtualisation | Activée : un hyperviseur est détecté (nécessaire pour WSL 2) |
+| Élément                      | Valeur                                                                    |
+|------------------------------|---------------------------------------------------------------------------|
+| Machine                      | Dell Latitude E7440 (BIOS Dell A28)                                       |
+| Système                      | Windows 10 Professionnel 22H2, 64 bits (build 10.0.19045.6466)            |
+| CPU                          | Intel Core i7 de 4e génération (Haswell — Intel64 Family 6 Model 69), ~2,0 GHz |
+| RAM                          | 16 Go (16 289 Mo)                                                         |
+| Disque                       | SSD 256 Go (59 Go libres au moment de l'installation)                     |
+| Virtualisation               | Activée : un hyperviseur est détecté (nécessaire pour WSL 2)              |
 | Autres hyperviseurs présents | VMware Workstation (VMnet1) et VirtualBox (réseau host-only 192.168.56.1) |
-| Réseau WSL | Carte `vEthernet (WSL)` : 172.26.80.1 |
+| Réseau WSL                   | Carte `vEthernet (WSL)` : 172.26.80.1                                     |
 
 Extrait de `systeminfo` (lignes utiles) :
 
@@ -119,16 +120,17 @@ Commentaire :
 
 ### Logiciels installés
 
-| Logiciel           | Version                                               | Commande de vérification | Rôle                                                       |
-|:-------------------|:------------------------------------------------------|:-------------------------|:-----------------------------------------------------------|
-| **WSL**            | `3.0.3.0` (noyau Linux `6.18.54.1-1`)                 | `wsl --version`          | Machine Linux légère dans laquelle tourne Docker           |
-| **Docker Desktop** | `4.92.0` (Docker Engine `29.8.0`, containerd `v2.3.5`) | `docker version`         | Moteur de conteneurs : chaque nœud kind est un conteneur   |
-| **kind**           | `v0.33.0` (go1.26.7, windows/amd64)                   | `kind version`           | Création du cluster Kubernetes dans Docker                 |
-| **kubectl**        | `v1.36.1` (client)                                    | `kubectl version`        | Client en ligne de commande pour piloter le cluster        |
-| **Image des nœuds** | `kindest/node:v1.37.0`                               | `kubectl get nodes`      | Kubernetes `v1.37.0` dans chaque nœud                      |
+| Logiciel            | Version                                                 | Commande de vérification | Rôle                                                     |
+|:--------------------|:--------------------------------------------------------|:-------------------------|:---------------------------------------------------------|
+| **WSL**             | `3.0.3.0` (noyau Linux `6.18.54.1-1`)                   | `wsl --version`          | Machine Linux légère dans laquelle tourne Docker         |
+| **Docker Desktop**  | `4.92.0` (Docker Engine `29.8.0`, containerd `v2.3.5`)  | `docker version`         | Moteur de conteneurs : chaque nœud kind est un conteneur |
+| **kind**            | `v0.33.0` (go1.26.7, windows/amd64)                     | `kind version`           | Création du cluster Kubernetes dans Docker               |
+| **kubectl**         | `v1.36.1` (client)                                      | `kubectl version`        | Client en ligne de commande pour piloter le cluster      |
+| **Image des nœuds** | `kindest/node:v1.37.0`                                  | `kubectl get nodes`      | Kubernetes `v1.37.0` dans chaque nœud                    |
 
 > **Compatibilité des versions**
- kubectl (`v1.36`) et le cluster (`v1.37`) n’ont qu’une version mineure d’écart. Cette combinaison est supportée : Kubernetes tolère un écart de ±1 version mineure entre le client et le serveur.
+>
+> kubectl (`v1.36`) et le cluster (`v1.37`) n'ont qu'une version mineure d'écart. Cette combinaison est supportée : Kubernetes tolère un écart de ±1 version mineure entre le client et le serveur.
 
 ### Sorties des commandes de version
 
@@ -173,7 +175,7 @@ Server: Docker Desktop 4.92.0 (240144)
   Version:          0.19.0
   GitCommit:        de40ad0
 ```
-![version dockeer ](captures/docker%20version.PNG)
+
 
 Le client Docker tourne sous Windows (`windows/amd64`), alors que le serveur (Engine) tourne sous Linux (`linux/amd64`) dans WSL 2.
 
@@ -211,13 +213,12 @@ wsl --version
 1. Télécharger l'installateur sur https://www.docker.com/products/docker-desktop/ et l'exécuter.
 2. Lancer Docker Desktop et accepter les conditions d'utilisation.
 3. Vérifier les réglages suivants (*Settings*) :
+   - Docker utilise le moteur Linux de WSL 2.
+   - Le Kubernetes intégré de Docker Desktop reste désactivé : le cluster est créé avec kind en ligne de commande.
 
-Docker utilise le moteur Linux de WSL 2 
-le cluster est créé avec kind en ligne de commande 
-
-
- **Pourquoi ne pas activer le Kubernetes de Docker Desktop ?**
-  Docker Desktop propose son propre cluster Kubernetes à un seul nœud. Le laisser activé ferait tourner deux clusters en parallèle (consommation de ressources inutile) et ajouterait un contexte `docker-desktop` dans kubectl, avec le risque de lancer des commandes sur le mauvais cluster. Le cluster du TP est uniquement celui créé par kind (contexte `kind-k8s-behanzin`).
+> **Pourquoi ne pas activer le Kubernetes de Docker Desktop ?**
+>
+> Docker Desktop propose son propre cluster Kubernetes à un seul nœud. Le laisser activé ferait tourner deux clusters en parallèle (consommation de ressources inutile) et ajouterait un contexte `docker-desktop` dans kubectl, avec le risque de lancer des commandes sur le mauvais cluster. Le cluster du TP est uniquement celui créé par kind (contexte `kind-k8s-behanzin`).
 
 ### 3.3 Installer kind et kubectl
 
@@ -237,7 +238,7 @@ docker version
 kind version
 kubectl version --client
 ```
-![kind_version](captures/kind%20version.PNG)
+
 
 ### 3.4 Créer le dossier du projet
 
@@ -254,8 +255,8 @@ C:.
     └───manifests
         ├───blog1
         └───blog2
-
 ```
+
 ### 3.5 Écrire le fichier de configuration
 
 ```
@@ -282,7 +283,6 @@ nodes:                                 # chaque entrée = un conteneur Docker = 
   - role: worker
   - role: worker
 ```
-
 
 Vérifier que le fichier existe sous le bon nom (et pas en `.txt`) :
 
@@ -313,25 +313,25 @@ Creating cluster "k8s-behanzin" ...
 Set kubectl context to "kind-k8s-behanzin"
 You can now use your cluster with:
 
-![deploiement](captures/création_cluster.PNG)
-
 kubectl cluster-info --context kind-k8s-behanzin
 
 Thanks for using kind! 😊
 ```
 
+![Capture de la création du cluster](captures/création_cluster.PNG)
+
 Chaque ligne correspond à une étape de la création :
 
-| Étape | Ce qui se passe |
-|---|---|
-| Ensuring node image | Téléchargement de l'image `kindest/node:v1.37.0`, qui contient Kubernetes v1.37.0, containerd et le kubelet |
-| Preparing nodes | Création des 4 conteneurs Docker (les 4 📦 = 4 nœuds) |
-| Writing configuration | Génération de la configuration kubeadm de chaque nœud |
-| Starting control-plane | `kubeadm init` sur le control plane : démarrage d'etcd, de l'API server, du scheduler et du controller-manager |
-| Installing CNI | Installation du plugin réseau kindnet |
-| Installing StorageClass | Installation d'un stockage par défaut (utile pour les volumes persistants) |
-| Joining worker nodes | `kubeadm join` : les 3 workers rejoignent le cluster |
-| Set kubectl context | Ajout du contexte `kind-k8s-behanzin` dans `%USERPROFILE%\.kube\config` |
+| Étape                   | Ce qui se passe                                                                                              |
+|-------------------------|--------------------------------------------------------------------------------------------------------------|
+| Ensuring node image     | Téléchargement de l'image `kindest/node:v1.37.0`, qui contient Kubernetes v1.37.0, containerd et le kubelet  |
+| Preparing nodes         | Création des 4 conteneurs Docker (les 4 📦 = 4 nœuds)                                                        |
+| Writing configuration   | Génération de la configuration kubeadm de chaque nœud                                                        |
+| Starting control-plane  | `kubeadm init` sur le control plane : démarrage d'etcd, de l'API server, du scheduler et du controller-manager |
+| Installing CNI          | Installation du plugin réseau kindnet                                                                        |
+| Installing StorageClass | Installation d'un stockage par défaut (utile pour les volumes persistants)                                   |
+| Joining worker nodes    | `kubeadm join` : les 3 workers rejoignent le cluster                                                         |
+| Set kubectl context     | Ajout du contexte `kind-k8s-behanzin` dans `%USERPROFILE%\.kube\config`                                      |
 
 ### 3.7 Vérifier le contexte et les nœuds Docker
 
@@ -385,21 +385,17 @@ Cette commande supprime les 4 conteneurs et le contexte `kind-k8s-behanzin` du k
 
 ## 4. Schéma d'architecture
 
-## Schéma d'architecture
-
 ![Architecture du cluster kind k8s-behanzin](captures/architecture.png)
-
-```
 
 ### Explication du schéma
 
-Le schéma se lit de l’extérieur vers l’intérieur, comme des boîtes
+Le schéma se lit de l'extérieur vers l'intérieur, comme des boîtes
 imbriquées.
 
-**Les couches d’infrastructure.** Le cluster tourne sur un poste
+**Les couches d'infrastructure.** Le cluster tourne sur un poste
 Windows. Windows ne pouvant pas exécuter directement des conteneurs
-Linux, Docker Desktop s’appuie sur **WSL 2**, une machine Linux légère
-intégrée à Windows. Dans Docker, l’outil **kind** crée le cluster
+Linux, Docker Desktop s'appuie sur **WSL 2**, une machine Linux légère
+intégrée à Windows. Dans Docker, l'outil **kind** crée le cluster
 Kubernetes `k8s-behanzin` : chaque nœud du cluster est en réalité un
 simple conteneur Docker (4 conteneurs au total).
 
@@ -407,11 +403,11 @@ simple conteneur Docker (4 conteneurs au total).
 le cerveau du cluster. Il ne fait pas tourner les applications mais
 contient les composants qui les gèrent :
 
-- l’**API server**, point d’entrée unique qui reçoit toutes les commandes ;
-- **etcd**, la base de données qui mémorise l’état du cluster ;
+- l'**API server**, point d'entrée unique qui reçoit toutes les commandes ;
+- **etcd**, la base de données qui mémorise l'état du cluster ;
 - le **scheduler**, qui choisit sur quel worker placer chaque pod ;
-- le **controller manager**, qui compare en permanence l’état voulu et
-  l’état réel, et corrige les écarts (par exemple en recréant un pod
+- le **controller manager**, qui compare en permanence l'état voulu et
+  l'état réel, et corrige les écarts (par exemple en recréant un pod
   arrêté).
 
 **Les workers.** Les trois nœuds `worker`, `worker2` et `worker3`
@@ -419,20 +415,22 @@ exécutent les pods des applications. Les pods du blog 1 (en bleu) et du
 blog 2 (en vert) sont répartis entre eux par le scheduler ; la
 répartition dessinée est indicative.
 
-**Les deux chemins d’accès.**
+**Les deux chemins d'accès.**
 
 1. *Administration (flèche noire)* : depuis Windows, `kubectl` envoie
-   ses commandes à l’API server (port 6443) pour créer, consulter ou
+   ses commandes à l'API server (port 6443) pour créer, consulter ou
    supprimer des ressources.
 2. *Accès aux blogs (flèche orange)* : les nœuds étant des conteneurs,
    ils ne sont pas joignables directement depuis Windows. Les
    `extraPortMappings` du fichier `kind-config.yaml` relient les ports
-   30081 et 30082 de l’hôte à ceux du control plane. Une requête vers
+   30081 et 30082 de l'hôte à ceux du control plane. Une requête vers
    `http://localhost:30081` arrive donc dans le cluster, où le
    **Service NodePort** du blog 1 la redirige, grâce à kube-proxy
    présent sur chaque nœud, vers un pod du blog 1, quel que soit le
-   worker qui l’héberge. Le même mécanisme s’applique au blog 2 sur le
+   worker qui l'héberge. Le même mécanisme s'applique au blog 2 sur le
    port 30082.
+
+---
 
 ## 5. Vérifications
 
@@ -456,29 +454,35 @@ Commentaire :
 
 ### 5.2 `kubectl get nodes -o wide`
 
-![alt text](captures/cap_kube1.PNG)
+```
+C:\Users\DUP\Documents\tp-k8s-behanzin>kubectl get nodes -o wide
+NAME                         STATUS   ROLES           AGE    VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE                       KERNEL-VERSION                              CONTAINER-RUNTIME
+k8s-behanzin-control-plane   Ready    control-plane   170m   v1.37.0   172.18.0.5    <none>        Debian GNU/Linux 13 (trixie)   6.18.54.1-microsoft-standard-WSL2 (amd64)   containerd://2.3.4
+k8s-behanzin-worker          Ready    <none>          169m   v1.37.0   172.18.0.2    <none>        Debian GNU/Linux 13 (trixie)   6.18.54.1-microsoft-standard-WSL2 (amd64)   containerd://2.3.4
+k8s-behanzin-worker2         Ready    <none>          169m   v1.37.0   172.18.0.3    <none>        Debian GNU/Linux 13 (trixie)   6.18.54.1-microsoft-standard-WSL2 (amd64)   containerd://2.3.4
+k8s-behanzin-worker3         Ready    <none>          169m   v1.37.0   172.18.0.4    <none>        Debian GNU/Linux 13 (trixie)   6.18.54.1-microsoft-standard-WSL2 (amd64)   containerd://2.3.4
+```
 
+![Capture de kubectl get nodes -o wide](captures/cap_kube1.PNG)
 
 Commentaire :
 
-| Colonne | Constat | Explication |
-|---|---|---|
-| `NAME` | `k8s-behanzin-control-plane`, `-worker`, `-worker2`, `-worker3` | **1 control plane et 3 workers**, comme demandé. Le préfixe `k8s-behanzin` respecte la règle de personnalisation |
-| `STATUS` | **4 × `Ready`** | Chaque kubelet communique avec l'API server et le réseau (kindnet) est opérationnel : les nœuds peuvent recevoir des pods |
-| `ROLES` | `control-plane` pour le maître, `<none>` pour les workers | Normal : Kubernetes n'affiche que le rôle control-plane ; un nœud sans rôle affiché est un worker |
-| `AGE` | 170 min et 169 min | Le control plane a été créé en premier, puis les workers l'ont rejoint (étape « Joining worker nodes ») |
-| `VERSION` | `v1.37.0` partout | Version de Kubernetes apportée par l'image `kindest/node:v1.37.0` ; tous les nœuds sont dans la même version |
-| `INTERNAL-IP` | `172.18.0.2` à `172.18.0.5` | Adresses des 4 conteneurs dans le réseau Docker `kind` (172.18.0.0/16). C'est par ce réseau que les nœuds communiquent entre eux |
-| `EXTERNAL-IP` | `<none>` | Pas d'IP publique : le cluster est local, on y accède par les ports publiés sur `localhost` |
-| `OS-IMAGE` | `Debian GNU/Linux 13 (trixie)` | Le système **à l'intérieur** de chaque nœud. Mon PC est sous Windows, mais les nœuds sont des conteneurs Linux |
-| `KERNEL-VERSION` | `6.18.54.1-microsoft-standard-WSL2` | C'est le **même noyau** que celui de WSL 2 (`wsl --version` : 6.18.54.1). Les nœuds n'ont pas leur propre noyau : ce sont des conteneurs qui partagent le noyau de la machine Linux de WSL 2, contrairement à des VM |
-| `CONTAINER-RUNTIME` | `containerd://2.3.4` | Chaque nœud a son **propre containerd**, qui démarre les conteneurs des pods. Il est différent de celui de Docker Desktop (v2.3.5 dans `docker version`), qui lui fait tourner les conteneurs-nœuds eux-mêmes |
+| Colonne            | Constat                                                          | Explication                                                                                                                                                                                                                                  |
+|--------------------|------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `NAME`             | `k8s-behanzin-control-plane`, `-worker`, `-worker2`, `-worker3`  | **1 control plane et 3 workers**, comme demandé. Le préfixe `k8s-behanzin` respecte la règle de personnalisation                                                                                                                             |
+| `STATUS`           | **4 × `Ready`**                                                  | Chaque kubelet communique avec l'API server et le réseau (kindnet) est opérationnel : les nœuds peuvent recevoir des pods                                                                                                                    |
+| `ROLES`            | `control-plane` pour le maître, `<none>` pour les workers        | Normal : Kubernetes n'affiche que le rôle control-plane ; un nœud sans rôle affiché est un worker                                                                                                                                            |
+| `AGE`              | 170 min et 169 min                                               | Le control plane a été créé en premier, puis les workers l'ont rejoint (étape « Joining worker nodes »)                                                                                                                                      |
+| `VERSION`          | `v1.37.0` partout                                                | Version de Kubernetes apportée par l'image `kindest/node:v1.37.0` ; tous les nœuds sont dans la même version                                                                                                                                 |
+| `INTERNAL-IP`      | `172.18.0.2` à `172.18.0.5`                                      | Adresses des 4 conteneurs dans le réseau Docker `kind` (172.18.0.0/16). C'est par ce réseau que les nœuds communiquent entre eux                                                                                                             |
+| `EXTERNAL-IP`      | `<none>`                                                         | Pas d'IP publique : le cluster est local, on y accède par les ports publiés sur `localhost`                                                                                                                                                  |
+| `OS-IMAGE`         | `Debian GNU/Linux 13 (trixie)`                                   | Le système **à l'intérieur** de chaque nœud. Mon PC est sous Windows, mais les nœuds sont des conteneurs Linux                                                                                                                               |
+| `KERNEL-VERSION`   | `6.18.54.1-microsoft-standard-WSL2`                              | C'est le **même noyau** que celui de WSL 2 (`wsl --version` : 6.18.54.1). Les nœuds n'ont pas leur propre noyau : ce sont des conteneurs qui partagent le noyau de la machine Linux de WSL 2, contrairement à des VM                          |
+| `CONTAINER-RUNTIME`| `containerd://2.3.4`                                             | Chaque nœud a son **propre containerd**, qui démarre les conteneurs des pods. Il est différent de celui de Docker Desktop (v2.3.5 dans `docker version`), qui lui fait tourner les conteneurs-nœuds eux-mêmes                                |
 
 **Conclusion : le cluster comporte bien 1 control plane et 3 workers, tous `Ready`.**
 
 ### 5.3 `kubectl get pods -n kube-system -o wide`
-![alt text](captures/cap_kube2.PNG)
-![alt text](captures/cap_kube3.PNG)
 
 ```
 C:\Users\DUP\Documents\tp-k8s-behanzin>kubectl get pods -n kube-system -o wide
@@ -499,7 +503,21 @@ kube-proxy-sxpq4                                     1/1     Running   0        
 kube-scheduler-k8s-behanzin-control-plane            1/1     Running   3 (36m ago)   170m   172.18.0.5   k8s-behanzin-control-plane   <none>           <none>
 ```
 
+![Capture de kubectl get pods (1/2)](captures/cap_kube2.PNG)
+
+![Capture de kubectl get pods (2/2)](captures/cap_kube3.PNG)
+
 On retrouve dans `kube-system` tous les composants du schéma de la section 4 :
+
+| Composant                 | Nombre | Rôle                                                       |
+|---------------------------|:------:|------------------------------------------------------------|
+| `etcd`                    | 1      | Base de données de l'état du cluster                       |
+| `kube-apiserver`          | 1      | Point d'entrée de toutes les commandes                     |
+| `kube-scheduler`          | 1      | Choix du nœud d'accueil de chaque pod                      |
+| `kube-controller-manager` | 1      | Correction des écarts entre état voulu et état réel        |
+| `coredns`                 | 2      | DNS interne du cluster                                     |
+| `kindnet`                 | 4      | Réseau des pods (un par nœud)                              |
+| `kube-proxy`              | 4      | Routage des Services, dont les NodePorts (un par nœud)     |
 
 Observations sur les adresses IP :
 
@@ -513,7 +531,6 @@ Remarques :
 - Le **kubelet** n'apparaît pas dans la liste : ce n'est pas un pod, mais un service système qui tourne directement dans chaque nœud.
 - La colonne `RESTARTS` montre des redémarrages il y a 36 à 45 minutes (kube-apiserver 3, kube-controller-manager 4, kube-scheduler 3, coredns 1). Ils sont analysés dans la section 6. Ils ne concernent pas etcd (0 redémarrage) : les données du cluster n'ont pas été affectées, et Kubernetes a relancé seul les composants, qui fonctionnent normalement depuis.
 
-
 ---
 
 ## 6. Difficultés rencontrées
@@ -522,28 +539,28 @@ Remarques :
 
 Après son installation, Docker Desktop refusait de démarrer. La cause
 venait du fonctionnement de Docker sous Windows : les conteneurs Linux
-ne peuvent pas s’exécuter directement sur Windows, Docker Desktop a donc
+ne peuvent pas s'exécuter directement sur Windows, Docker Desktop a donc
 besoin de **WSL 2**, une machine Linux légère intégrée au système, qui
-n’était pas installée. J’ai installé WSL 2 avec la commande
+n'était pas installée. J'ai installé WSL 2 avec la commande
 `wsl --install`, puis redémarré le PC. Docker Desktop a ensuite démarré
 normalement.
 
-### 2. La commande kind n’était pas reconnue
+### 2. La commande kind n'était pas reconnue
 
-Au premier lancement de kind, le terminal a affiché l’erreur
-`'kind' n’est pas reconnu en tant que commande interne…`. kind n’était
+Au premier lancement de kind, le terminal a affiché l'erreur
+`'kind' n'est pas reconnu en tant que commande interne…`. kind n'était
 tout simplement pas installé, et Windows ne trouvait donc aucun
-exécutable de ce nom dans le `PATH`. Je l’ai installé avec
-`winget install Kubernetes.kind`, puis j’ai fermé et rouvert le terminal
-afin qu’il recharge le `PATH` et prenne en compte la nouvelle commande.
+exécutable de ce nom dans le `PATH`. Je l'ai installé avec
+`winget install Kubernetes.kind`, puis j'ai fermé et rouvert le terminal
+afin qu'il recharge le `PATH` et prenne en compte la nouvelle commande.
 
 ### 3. Le choix entre Kubernetes de Docker Desktop et kind
 
-Docker Desktop propose d’activer son propre cluster Kubernetes, ce qui
-semblait être la solution la plus simple. Je l’ai écartée car elle ne
-répondait pas aux exigences du TP : ce cluster ne comporte qu’un seul
+Docker Desktop propose d'activer son propre cluster Kubernetes, ce qui
+semblait être la solution la plus simple. Je l'ai écartée car elle ne
+répondait pas aux exigences du TP : ce cluster ne comporte qu'un seul
 nœud, son nom est imposé (`docker-desktop`) et il ne permet pas de
-publier les NodePorts comme le fait kind. J’ai donc laissé cette option
+publier les NodePorts comme le fait kind. J'ai donc laissé cette option
 désactivée et créé le cluster avec kind en ligne de commande, ce qui
-m’a permis d’obtenir les quatre nœuds demandés et de choisir le nom du
+m'a permis d'obtenir les quatre nœuds demandés et de choisir le nom du
 cluster.
