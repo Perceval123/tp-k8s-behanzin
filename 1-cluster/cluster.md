@@ -456,14 +456,8 @@ Commentaire :
 
 ### 5.2 `kubectl get nodes -o wide`
 
-```
-C:\Users\DUP\Documents\tp-k8s-behanzin>kubectl get nodes -o wide
-NAME                         STATUS   ROLES           AGE    VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE                       KERNEL-VERSION                              CONTAINER-RUNTIME
-k8s-behanzin-control-plane   Ready    control-plane   170m   v1.37.0   172.18.0.5    <none>        Debian GNU/Linux 13 (trixie)   6.18.54.1-microsoft-standard-WSL2 (amd64)   containerd://2.3.4
-k8s-behanzin-worker          Ready    <none>          169m   v1.37.0   172.18.0.2    <none>        Debian GNU/Linux 13 (trixie)   6.18.54.1-microsoft-standard-WSL2 (amd64)   containerd://2.3.4
-k8s-behanzin-worker2         Ready    <none>          169m   v1.37.0   172.18.0.3    <none>        Debian GNU/Linux 13 (trixie)   6.18.54.1-microsoft-standard-WSL2 (amd64)   containerd://2.3.4
-k8s-behanzin-worker3         Ready    <none>          169m   v1.37.0   172.18.0.4    <none>        Debian GNU/Linux 13 (trixie)   6.18.54.1-microsoft-standard-WSL2 (amd64)   containerd://2.3.4
-```
+![alt text](captures/cap_kube1.PNG)
+
 
 Commentaire :
 
@@ -483,6 +477,8 @@ Commentaire :
 **Conclusion : le cluster comporte bien 1 control plane et 3 workers, tous `Ready`.**
 
 ### 5.3 `kubectl get pods -n kube-system -o wide`
+![alt text](captures/cap_kube2.PNG)
+![alt text](captures/cap_kube3.PNG)
 
 ```
 C:\Users\DUP\Documents\tp-k8s-behanzin>kubectl get pods -n kube-system -o wide
